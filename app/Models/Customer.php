@@ -6,25 +6,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
-    protected $guarded = '[id]';
+    protected $guarded = ['id'];
 
-    public function wali_murid()
+    public function user()
     {
-        return $this->hasMany(WaliMurid::class, 'customer_id');
-    }
-
-    public function siswa()
-    {
-        return $this->hasMany(Siswa::class, 'customer_id');
-    }
-
-    public function guru()
-    {
-        return $this->hasMany(Guru::class, 'customer_id');
+        return $this->belongsTo(User::class);
     }
 
     public function perusahaan()
     {
         return $this->belongsTo(Perusahaan::class);
+    }
+
+    public function guru()
+    {
+        return $this->hasOne(Guru::class);
+    }
+
+    public function siswa()
+    {
+        return $this->hasOne(Siswa::class);
     }
 }

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Jurusan extends Model
 {
-    protected $guarded = '[id]';
+    protected $guarded = ['id'];
 
     public function perusahaan()
     {
@@ -22,5 +22,4 @@ class Jurusan extends Model
     {
         return $this->hasMany(Guru::class);
     }
-
 }

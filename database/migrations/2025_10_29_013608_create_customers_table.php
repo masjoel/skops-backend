@@ -14,11 +14,12 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->string('nama', 100);
+            $table->foreignId('perusahaan_id')->constrained('perusahaans')->onDelete('cascade');
+            $table->string('nama');
             $table->text('alamat')->nullable();
-            $table->string('kota', 100)->nullable();
-            $table->string('hp', 50)->nullable();
-            $table->string('email', 100)->nullable();
+            $table->string('kota')->nullable();
+            $table->string('hp')->nullable();
+            $table->string('email')->nullable();
             $table->text('keterangan')->nullable();
             $table->enum('status', ['Lancar', 'Macet'])->default('Lancar');
             $table->timestamps();

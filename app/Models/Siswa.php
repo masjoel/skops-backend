@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Siswa extends Model
 {
-    protected $guarded = '[id]';
+    protected $guarded = ['id'];
 
     public function kontrols()
     {

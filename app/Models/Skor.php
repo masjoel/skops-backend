@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Skor extends Model
 {
-    protected $guarded = '[id]';
+    protected $guarded = ['id'];
 
     public function kontrol()
     {
