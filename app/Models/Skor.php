@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Skor extends Model
 {
+    protected $table = 'skor';
     protected $guarded = ['id'];
+    public $timestamps = false;
 
     public function kontrol()
     {

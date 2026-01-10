@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Perusahaan extends Model
 {
-    protected $guarded = ['id'];
+    protected $table = 'perusahaan';
+    protected $primaryKey = 'idx';
+    protected $guarded = ['idx'];
 
     public function user()
     {
