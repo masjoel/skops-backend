@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Kontrol;
-use App\Models\Customer;
-use App\Models\Perusahaan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
+use App\Models\WaliKelas;
 use Illuminate\Support\Facades\Auth;
 
-class SiswaController extends Controller
+class WaliKelasController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -28,28 +27,27 @@ class SiswaController extends Controller
             ->where('idprsh', $IDprsh)
             ->pluck('idx');
 
-        $siswa = Customer::where('level', 'siswa')->orderBy('id', 'desc');
-        $qrySiswa = $siswa->when($cari, function ($query, $search) {
+        $walikelas = WaliKelas::orderBy('id', 'desc');
+        $qryWalikelas = $walikelas->when($cari, function ($query, $search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%$search%")
                     ->orWhere('kelas', 'like', "%$search%")
                     ->orWhere('jurusan', 'like', "%$search%")
-                    ->orWhere('nis', 'like', "%$search%")
-                    ->orWhere('nisn', 'like', "%$search%")
-                    ->orWhere('alamat', 'like', "%$search%");
+                    ->orWhere('nip', 'like', "%$search%")
+                    ->orWhere('tahun', 'like', "%$search%");
             });
         });
 
         if ($level == 'administrator' and $IDprsh == 0) {
-            $querySiswa = $qrySiswa;
+            $queryWalikelas = $qryWalikelas;
         } else if ($level == 'administrator' and $IDprsh > 0) {
-            $querySiswa = $qrySiswa->whereIn('iduser', $userIds);
+            $queryWalikelas = $qryWalikelas->whereIn('iduser', $userIds);
         } else if ($level == 'guru') {
-            $querySiswa = $qrySiswa->whereIn('iduser', $userIds);
+            $queryWalikelas = $qryWalikelas->whereIn('iduser', $userIds);
         } else {
-            $querySiswa = $qrySiswa->whereIn('iduser', $userIds);
+            $queryWalikelas = $qryWalikelas->whereIn('iduser', $userIds);
         }
-        $data['siswa'] = $querySiswa->paginate(20);
+        $data['walikelas'] = $queryWalikelas->paginate(20);
         return response()->json([
             'message' => 'success',
             'data' => $data,
@@ -71,24 +69,25 @@ class SiswaController extends Controller
     {
         DB::beginTransaction();
         $request->validate([
-            'nama' => 'required',
             'kelas' => 'required',
+            'tahun' => 'required',
         ]);
-        $data = Customer::create([
-            'level' => 'siswa',
+        $guru = Customer::where('id', $request->idguru)->first();
+        $data = WaliKelas::create([
             'iduser' => Auth::user()->idx,
-            'nis' => $request->nis,
-            'nisn' => $request->nisn,
-            'nama' => $request->nama,
+            'idguru' => $request->idguru,
+            'nip' => $guru->nis,
+            'nama' => $guru->nama,
             'kelas' => $request->kelas,
-            'jurusan' => $request->jurusan,
             'ext' => $request->ext,
+            'jurusan' => $request->jurusan,
+            'tahun' => $request->tahun,
         ]);
         if ($data) {
             DB::commit();
             return response()->json([
                 'message' => 'Data created successfully',
-                'siswa' => $data,
+                'walikelas' => $data,
             ], 201);
         } else {
             DB::rollBack();
@@ -117,30 +116,34 @@ class SiswaController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Customer $siswa)
+    public function update(Request $request, WaliKelas $walikela)
     {
-        $siswa->update($request->all());
+        $data = $request->all();
+        $guru = Customer::where('id', $request->idguru)->first();
+        $data['nama'] = $guru->nama;
+        $data['nip'] = $guru->nis;
+        $walikela->update($data);
         return response()->json([
             'message' => 'Data updated successfully',
-            'siswa' => $siswa,
+            'walikelas' => $walikela,
         ], 201);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Customer $siswa)
+    public function destroy(WaliKelas $walikela)
     {
-        $cek = Kontrol::where('idsiswa', $siswa->id)->count();
+        $cek = Customer::where('kelas', $walikela->kelas)->count();
         if ($cek == 0) {
-            $siswa->delete();
+            $walikela->delete();
             return response()->json([
                 'message' => 'Data deleted successfully',
             ], 201);
         } else {
             return response()->json([
                 'message' => 'Data gagal dihapus, sudah digunakan di database lain!',
-            ], 201);
+            ], 200);
         }
     }
 }

@@ -14,36 +14,83 @@ class GuruController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $cari = $request->input('search');
+
         $level = Auth::user()->level;
         $IDprsh = Auth::user()->idprsh;
         $IDopr = Auth::user()->idopr;
         $IDuser = Auth::user()->idx;
 
-        $qryGuru = Customer::where('level', 'guru');
+        $userIds = DB::table('user')
+            ->where('idprsh', $IDprsh)
+            ->pluck('idx');
+
+        $guru = Customer::where('level', 'guru')->orderBy('id', 'desc');
+        $qryGuru = $guru->when($cari, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%$search%")
+                    ->orWhere('kelas', 'like', "%$search%")
+                    ->orWhere('jurusan', 'like', "%$search%")
+                    ->orWhere('nis', 'like', "%$search%")
+                    ->orWhere('status', 'like', "%$search%")
+                    ->orWhere('alamat', 'like', "%$search%");
+            });
+        });
         if ($level == 'administrator' and $IDprsh == 0) {
             $queryGuru = $qryGuru;
+        } else if ($level == 'administrator' and $IDprsh > 0) {
+            $queryGuru = $qryGuru->whereIn('iduser', $userIds);
         } else if ($level == 'guru') {
-            $queryGuru = $qryGuru
-                ->whereIn('iduser', function ($query) use ($IDprsh) {
-                    $query->select('idx')
-                        ->from('user')
-                        ->where('idprsh', $IDprsh);
-                });
+            $queryGuru = $qryGuru->whereIn('iduser', $userIds);
         } else {
-            $queryGuru = $qryGuru
-                ->whereIn('iduser', function ($query) use ($IDprsh) {
-                    $query->select('idx')
-                        ->from('user')
-                        ->where('idprsh', $IDprsh);
-                });
+            $queryGuru = $qryGuru->whereIn('iduser', $userIds);
         }
-        $data['guru'] = $queryGuru->limit(10)->get();
+        $data['guru'] = $queryGuru->paginate(20);
         return response()->json([
             'message' => 'success',
             'data' => $data,
-        ], 201);
+        ]);
+    }
+    public function list(Request $request)
+    {
+        $cari = $request->input('search');
+
+        $level = Auth::user()->level;
+        $IDprsh = Auth::user()->idprsh;
+        $IDopr = Auth::user()->idopr;
+        $IDuser = Auth::user()->idx;
+
+        $userIds = DB::table('user')
+            ->where('idprsh', $IDprsh)
+            ->pluck('idx');
+
+        $guru = Customer::where('level', 'guru')->orderBy('id', 'desc');
+        $qryGuru = $guru->when($cari, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%$search%")
+                    ->orWhere('kelas', 'like', "%$search%")
+                    ->orWhere('jurusan', 'like', "%$search%")
+                    ->orWhere('nis', 'like', "%$search%")
+                    ->orWhere('status', $search)
+                    ->orWhere('alamat', 'like', "%$search%");
+            });
+        });
+        if ($level == 'administrator' and $IDprsh == 0) {
+            $queryGuru = $qryGuru;
+        } else if ($level == 'administrator' and $IDprsh > 0) {
+            $queryGuru = $qryGuru->whereIn('iduser', $userIds);
+        } else if ($level == 'guru') {
+            $queryGuru = $qryGuru->whereIn('iduser', $userIds);
+        } else {
+            $queryGuru = $qryGuru->whereIn('iduser', $userIds);
+        }
+        $data['guru'] = $queryGuru->get();
+        return response()->json([
+            'message' => 'success',
+            'data' => $data,
+        ]);
     }
 
     /**
@@ -67,11 +114,12 @@ class GuruController extends Controller
         $data = Customer::create([
             'level' => 'guru',
             'iduser' => Auth::user()->idx,
-            'nis' => $request->nip,
+            'nis' => $request->nis,
             'nama' => $request->nama,
             'kelas' => $request->kelas,
             'jurusan' => $request->jurusan,
             'ext' => $request->ext,
+            'status' => 'Aktif',
         ]);
         if ($data) {
             DB::commit();

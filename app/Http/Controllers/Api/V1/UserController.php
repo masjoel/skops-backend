@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Skor;
 use Ramsey\Uuid\Uuid;
+use App\Models\Kontrol;
 use App\Models\UserOld;
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Models\Kontrol;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
@@ -99,9 +100,12 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(UserOld $user)
     {
-        //
+        return response()->json([
+            'message' => 'success',
+            'data' => $user,
+        ], 201);
     }
 
     /**
@@ -120,7 +124,13 @@ class UserController extends Controller
         DB::beginTransaction();
         $request->validate([
             'nama' => 'required',
-            'username' => 'required|string|min:4|unique:user,username',
+            // 'username' => 'required|string|min:4|unique:user,username',
+            'username' => [
+                'required',
+                'string',
+                'min:4',
+                Rule::unique('user', 'username')->ignore($user->idx, 'idx'),
+            ],
             'password' => 'required',
         ]);
 
@@ -131,14 +141,18 @@ class UserController extends Controller
 
         $opr = Customer::where('id', $request->idopr)->first();
         $user->update([
-            'idopr' => $request->idopr,
+            'idopr' => $request->idopr ? $request->idopr : $user->idopr,
             'username' => $request->username,
             'password' => substr(md5($request->password), 0, 20),
             'password_new' => Hash::make($request->password),
             'nama' => $request->idopr ? $opr->nama : $request->nama,
-            'level' => $request->level,
-            'status' => $request->status,
-            'akses' => $akses
+            'level' => $request->level ? $request->level : $user->level,
+            'status' => $request->status ? $request->status : $user->status,
+            'akses' => $akses,
+            'q1' => $request->q1 ? $request->q1 : $user->q1,
+            'q2' => $request->q2 ? $request->q2 : $user->q2,
+            'a1' => $request->a1 ? $request->a1 : $user->a1,
+            'a2' => $request->a2 ? $request->a2 : $user->a2
         ]);
         DB::commit();
         return response()->json([

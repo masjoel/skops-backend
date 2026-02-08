@@ -16,12 +16,12 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'username' => 'required',
+            'email' => 'required',
             'password' => 'required',
         ]);
 
 
-        $user = UserOld::where('username', $request->username)->first();
+        $user = UserOld::where('username', $request->email)->first();
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -80,12 +80,13 @@ class AuthController extends Controller
         DB::beginTransaction();
         $apps = Perusahaan::first();
         $request->validate([
-            'nama' => 'required',
             'username' => 'required|string|min:4|unique:user,username',
-            'email' => 'required|email|unique:user,email',
             'password' => 'required',
-            'mpassword' => 'required',
+            'nama' => 'required',
+            'email' => 'required|email|unique:user,email',
             'npsn' => 'required|string|unique:perusahaan,Signature',
+            'instansi' => 'required',
+            'alamat' => 'required',
         ]);
 
         $jamNow = date('Y-m-d H:i:s');
@@ -107,7 +108,8 @@ class AuthController extends Controller
             'password_new' => Hash::make($request->password),
             'nama' => $request->nama,
             'level' => 'administrator',
-            'status' => 'Non Aktif',
+            'status' => 'Aktif',
+            'photo' => 'nophoto.jpg',
             'email' => $request->email,
             'telp' => $request->username,
             'q1' => 'Siapa Nama lengkap Anda?',
@@ -116,17 +118,22 @@ class AuthController extends Controller
             'a2' => $request->username,
             'jam' => $jamNow,
             'akses' => '1,2,8,15,3,102,101,110,112,111,6',
-            'kodeact' => $kodeactivasi
+            // 'kodeact' => $kodeactivasi
         ]);
+        $token = $data->createToken('auth_token')->plainTextToken;
+        
         if ($data) {
             DB::commit();
             return response()->json([
+                'status' => 'true',
                 'message' => 'User created successfully',
+                'token' => $token,
                 'user' => $data,
-            ], 201);
+            ]);
         } else {
             DB::rollBack();
             return response()->json([
+                'status' => 'false',
                 'message' => 'User created failed',
             ], 422);
         }

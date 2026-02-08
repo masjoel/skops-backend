@@ -14,36 +14,46 @@ class SkorController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $cari = $request->input('search');
+
         $level = Auth::user()->level;
         $IDprsh = Auth::user()->idprsh;
         $IDopr = Auth::user()->idopr;
         $IDuser = Auth::user()->idx;
 
-        $qrySkor = Skor::where('id', '>', 0);
+        $userIds = DB::table('user')
+            ->where('idprsh', $IDprsh)
+            ->pluck('idx');
+
+        $skor = Skor::orderBy('id', 'desc');
+        $qrySkor = $skor->when($cari, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('jenis', 'like', "%$search%")
+                    ->orWhere('deskripsi', 'like', "%$search%")
+                    ->orWhere('tipe', 'like', "%$search%")
+                    ->orWhere('skor', 'like', "%$search%")
+                    ->orWhere('tindakan', 'like', "%$search%")
+                    ->orWhere('kode', 'like', "%$search%");
+            });
+        });
 
         if ($level == 'administrator' and $IDprsh == 0) {
             $querySkor = $qrySkor;
+        } else if ($level == 'administrator' and $IDprsh > 0) {
+            $querySkor = $qrySkor->whereIn('iduser', $userIds);
         } else if ($level == 'guru') {
-            $querySkor = $qrySkor->whereIn('iduser', function ($query) use ($IDprsh) {
-                $query->select('idx')
-                    ->from('user')
-                    ->where('idprsh', $IDprsh);
-            });
+            $querySkor = $qrySkor->whereIn('iduser', $userIds);
         } else {
-            $querySkor = $qrySkor->whereIn('iduser', function ($query) use ($IDprsh) {
-                $query->select('idx')
-                    ->from('user')
-                    ->where('idprsh', $IDprsh);
-            });
+            $querySkor = $qrySkor->whereIn('iduser', $userIds);
         }
 
-        $data['skor'] = $querySkor->orderByDesc('id')->limit(10)->get();
+        $data['skor'] = $querySkor->orderByDesc('id')->get();
         return response()->json([
             'message' => 'success',
             'data' => $data,
-        ], 201);
+        ]);
     }
 
     /**
@@ -74,6 +84,7 @@ class SkorController extends Controller
             'skor' => $request->skor,
             'tipe' => $request->tipe,
             'tindakan' => $request->tindakan,
+            'jam' => date('Y-m-d H:i:s'),
         ]);
         if ($data) {
             DB::commit();
@@ -110,11 +121,14 @@ class SkorController extends Controller
      */
     public function update(Request $request, Skor $skor)
     {
-        $skor->update($request->all());
+        logger('RAW BODY: ' . $request->getContent());
+        logger('REQUEST DATA:', $request->all());
+        $data = $request->all();
+        $skor->update($data);
         return response()->json([
             'message' => 'Data updated successfully',
             'skor' => $skor,
-        ], 201);
+        ]);
     }
 
     /**

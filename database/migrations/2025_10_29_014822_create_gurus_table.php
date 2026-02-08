@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
             $table->string('nip')->nullable();
             $table->string('mata_pelajaran')->nullable();
+            $table->foreignId('kelas_id')->nullable()->constrained('kelas')->onDelete('set null');
+            $table->foreignId('ext_id')->nullable()->constrained('kelas_exts')->onDelete('set null');
+            $table->foreignId('jurusan_id')->nullable()->constrained('jurusans')->onDelete('set null');
             $table->timestamps();
         });
     }

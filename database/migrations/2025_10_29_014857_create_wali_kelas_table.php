@@ -14,8 +14,11 @@ return new class extends Migration
         Schema::create('wali_kelas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('guru_id')->constrained('gurus')->onDelete('cascade');
-            $table->string('kelas');
             $table->year('tahun_ajaran')->nullable();
+            $table->foreignId('kelas_id')->nullable()->constrained('kelas')->onDelete('set null');
+            $table->foreignId('ext_id')->nullable()->constrained('kelas_exts')->onDelete('set null');
+            $table->foreignId('jurusan_id')->nullable()->constrained('jurusans')->onDelete('set null');
+            $table->string('status')->default('aktif');
             $table->timestamps();
         });
     }
