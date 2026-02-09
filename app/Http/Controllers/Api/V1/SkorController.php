@@ -78,7 +78,7 @@ class SkorController extends Controller
         $data = Skor::create([
             'iduser' => Auth::user()->idx,
             'urut' => $request->urut,
-            'kode' => $request->kode,
+            'kode' => strtoupper($request->kode),
             'jenis' => $request->jenis,
             'deskripsi' => $request->deskripsi,
             'skor' => $request->skor,
@@ -121,9 +121,10 @@ class SkorController extends Controller
      */
     public function update(Request $request, Skor $skor)
     {
-        logger('RAW BODY: ' . $request->getContent());
-        logger('REQUEST DATA:', $request->all());
+        // logger('RAW BODY: ' . $request->getContent());
+        // logger('REQUEST DATA:', $request->all());
         $data = $request->all();
+        $data['kode'] = strtoupper($request->kode);
         $skor->update($data);
         return response()->json([
             'message' => 'Data updated successfully',

@@ -34,6 +34,7 @@ Route::prefix('v1')->group(function () {
         Route::get('top10skor', [DashboardController::class, 'top10skor'])->middleware('auth:sanctum');
         Route::get('jenispoin', [DashboardController::class, 'jenispoin'])->middleware('auth:sanctum');
         Route::apiResource('siswa', SiswaController::class)->middleware('auth:sanctum');
+        Route::get('siswa-list', [SiswaController::class, 'list'])->middleware('auth:sanctum');
         Route::apiResource('guru', GuruController::class)->middleware('auth:sanctum');
         Route::get('guru-list', [GuruController::class, 'list'])->middleware('auth:sanctum');
         Route::apiResource('walikelas', WaliKelasController::class)->middleware('auth:sanctum');

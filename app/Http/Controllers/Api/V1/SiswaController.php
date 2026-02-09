@@ -55,6 +55,45 @@ class SiswaController extends Controller
             'data' => $data,
         ]);
     }
+    public function list(Request $request)
+    {
+        $cari = $request->input('search');
+
+        $level = Auth::user()->level;
+        $IDprsh = Auth::user()->idprsh;
+        $IDopr = Auth::user()->idopr;
+        $IDuser = Auth::user()->idx;
+
+        $userIds = DB::table('user')
+            ->where('idprsh', $IDprsh)
+            ->pluck('idx');
+
+        $siswa = Customer::where('level', 'siswa')->orderBy('id', 'desc');
+        $qrySiswa = $siswa->when($cari, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%$search%")
+                    ->orWhere('kelas', 'like', "%$search%")
+                    ->orWhere('jurusan', 'like', "%$search%")
+                    ->orWhere('nis', 'like', "%$search%")
+                    ->orWhere('status', $search)
+                    ->orWhere('alamat', 'like', "%$search%");
+            });
+        });
+        if ($level == 'administrator' and $IDprsh == 0) {
+            $querySiswa = $qrySiswa;
+        } else if ($level == 'administrator' and $IDprsh > 0) {
+            $querySiswa = $qrySiswa->whereIn('iduser', $userIds);
+        } else if ($level == 'guru') {
+            $querySiswa = $qrySiswa->whereIn('iduser', $userIds);
+        } else {
+            $querySiswa = $qrySiswa->whereIn('iduser', $userIds);
+        }
+        $data['siswa'] = $querySiswa->get();
+        return response()->json([
+            'message' => 'success',
+            'data' => $data,
+        ]);
+    }
 
     /**
      * Show the form for creating a new resource.

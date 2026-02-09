@@ -15,14 +15,20 @@ class KontrolController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $cari = $request->input('search');
+
         $level = Auth::user()->level;
         $IDprsh = Auth::user()->idprsh;
         $IDopr = Auth::user()->idopr;
         $IDuser = Auth::user()->idx;
 
-        $qryKontrol = Kontrol::from('kontrol as a')
+        $userIds = DB::table('user')
+            ->where('idprsh', $IDprsh)
+            ->pluck('idx');
+
+        $kontrol = Kontrol::from('kontrol as a')
             ->select(
                 'a.*',
                 'b.nama as namaguru',
@@ -35,28 +41,35 @@ class KontrolController extends Controller
             ->leftJoin('customer as b', 'b.id', '=', 'a.idguru')
             ->leftJoin('customer as c', 'c.id', '=', 'a.idsiswa')
             ->leftJoin('user as d', 'd.idx', '=', 'a.iduser');
+        $qryKontrol = $kontrol->when($cari, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('a.jenis', 'like', "%$search%")
+                    ->orWhere('a.deskripsi', 'like', "%$search%")
+                    ->orWhere('a.tipe', 'like', "%$search%")
+                    ->orWhere('a.tindakan', 'like', "%$search%")
+                    ->orWhere('b.nama', 'like', "%$search%")
+                    ->orWhere('c.nama', 'like', "%$search%")
+                    ->orWhere('c.kelas', 'like', "%$search%")
+                    ->orWhere('c.jurusan', 'like', "%$search%")
+                    ->orWhere('d.nama', 'like', "%$search%");
+            });
+        });
 
         if ($level == 'administrator' and $IDprsh == 0) {
             $queryKontrol = $qryKontrol;
+        } else if ($level == 'administrator' and $IDprsh > 0) {
+            $queryKontrol = $qryKontrol->whereIn('a.iduser', $userIds);
         } else if ($level == 'guru') {
-            $queryKontrol = $qryKontrol->whereIn('a.iduser', function ($query) use ($IDprsh) {
-                $query->select('idx')
-                    ->from('user')
-                    ->where('idprsh', $IDprsh);
-            });
+            $queryKontrol = $qryKontrol->whereIn('a.iduser', $userIds);
         } else {
-            $queryKontrol = $qryKontrol->whereIn('a.iduser', function ($query) use ($IDprsh) {
-                $query->select('idx')
-                    ->from('user')
-                    ->where('idprsh', $IDprsh);
-            });
+            $queryKontrol = $qryKontrol->whereIn('a.iduser', $userIds);
         }
 
-        $data['kontrol'] = $queryKontrol->orderByDesc('a.id')->limit(10)->get();
+        $data['kontrol'] = $queryKontrol->orderByDesc('a.id')->paginate(20);
         return response()->json([
             'message' => 'success',
             'data' => $data,
-        ], 201);
+        ], 200);
     }
     public function rekap()
     {
@@ -135,7 +148,10 @@ class KontrolController extends Controller
     {
         DB::beginTransaction();
         $request->validate([
-            'skor' => 'required|numeric',
+            'tgl' => 'required|date',
+            'idguru' => 'required',
+            'idsiswa' => 'required',
+            'idskor' => 'required',
         ]);
         $skor = Skor::find($request->idskor);
         $data = Kontrol::create([
@@ -148,7 +164,9 @@ class KontrolController extends Controller
             'skor' => $skor->skor,
             'jenis' => $skor->jenis,
             'deskripsi' => $skor->deskripsi,
+            'semester' => $request->semester ?: '1',
             'tipe' => $skor->tipe,
+            'jam' => date('Y-m-d H:i:s'),
         ]);
         if ($data) {
             DB::commit();
